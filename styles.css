@@ -1,0 +1,16 @@
+/* Additional custom styles */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Add smooth scrolling */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Add custom transitions */
+.transition-transform {
+    transition: transform 0.3s ease-in-out;
+} 

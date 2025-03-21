@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - TechStudy Hub</title>
+    <link rel="icon" type="image/x-icon" href="data:image/x-icon;,">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="loading-overlay">
+        <div class="loading-spinner">
+            <div class="loading-cube">
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+            </div>
+        </div>
+    </div>
+    <!-- Three.js Background -->
+    <div id="three-bg" class="fixed inset-0 -z-10"></div>
+
+    <!-- Navigation -->
+    <nav class="bg-white/80 shadow-lg backdrop-blur-lg sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="flex justify-between items-center h-16">
+                <div class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    TechStudy Hub Admin
+                </div>
+                <div class="flex space-x-4">
+                    <a href="/" class="text-gray-600 hover:text-blue-600 transition-colors">View Blog</a>
+                    <button id="newPostBtn" 
+                            class="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:opacity-90 transition-opacity">
+                        New Article
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- New/Edit Article Modal -->
+    <div id="articleModal" class="fixed inset-0 bg-slate-900/60 hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-[800px] shadow-lg rounded-md bg-white/90 backdrop-blur-lg">
+            <div class="mt-3">
+                <h3 id="modalTitle" class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-6">
+                    Create New Article
+                </h3>
+                <form id="articleForm" class="space-y-6">
+                    <input type="hidden" id="articleId">
+                    <div>
+                        <label class="block text-slate-700 font-medium mb-2">Title</label>
+                        <input type="text" id="title" 
+                               class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" 
+                               required>
+                    </div>
+                    <div>
+                        <label class="block text-slate-700 font-medium mb-2">Content</label>
+                        <textarea id="content" name="content" rows="12" 
+                                  class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"></textarea>
+                        <input type="hidden" id="content-hidden" name="content-hidden">
+                    </div>
+                    <div>
+                        <label class="block text-slate-700 font-medium mb-2">Thumbnail Image</label>
+                        <div class="flex items-center space-x-4">
+                            <input type="file" id="thumbnail" accept="image/*" 
+                                   class="flex-1 p-2 border rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700 transition-all">
+                            <img id="thumbnailPreview" class="hidden h-20 w-20 object-cover rounded-lg border" alt="Thumbnail preview">
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-4">
+                        <button type="button" id="cancelBtn" 
+                                class="px-6 py-3 text-slate-600 hover:text-slate-800 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" 
+                                class="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:opacity-90 transition-opacity">
+                            Save Article
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Articles List -->
+    <div class="max-w-6xl mx-auto px-4 py-12 flex-grow w-full">
+        <div class="bg-white/80 backdrop-blur-lg rounded-lg shadow-lg">
+            <div class="p-6">
+                <h2 class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-6">
+                    Manage Articles
+                </h2>
+                <div id="articlesList" class="space-y-6">
+                    <!-- Articles will be listed here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900/90 backdrop-blur-lg text-white py-12 mt-auto">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-4">
+                        TechStudy Hub
+                    </h3>
+                    <p class="text-slate-400">
+                        Empowering developers through practical tutorials and in-depth tech articles.
+                    </p>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Quick Links</h4>
+                    <ul class="space-y-2">
+                        <li><a href="/" class="text-slate-400 hover:text-white transition-colors">Home</a></li>
+                        <li><a href="/articles.html" class="text-slate-400 hover:text-white transition-colors">Articles</a></li>
+                        <li><a href="/about.html" class="text-slate-400 hover:text-white transition-colors">About</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Connect</h4>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-slate-400 hover:text-white transition-colors">Twitter</a>
+                        <a href="#" class="text-slate-400 hover:text-white transition-colors">GitHub</a>
+                        <a href="#" class="text-slate-400 hover:text-white transition-colors">LinkedIn</a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-slate-700 mt-8 pt-8 text-center text-slate-400">
+                <p>&copy; 2024 TechStudy Hub. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Add TinyMCE for rich text editing -->
+    <script src="https://cdn.tiny.cloud/1/3lq5hxyztbj3jswybnpzo8sblx5p0wz7b6sk7nc57t7y3s34/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <script type="module" src="three-background.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html> 

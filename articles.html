@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Articles - TechStudy Hub</title>
+    <link rel="icon" type="image/x-icon" href="data:image/x-icon;,">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+    <div class="loading-overlay">
+        <div class="loading-spinner">
+            <div class="loading-cube">
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+            </div>
+        </div>
+    </div>
+    <!-- Three.js Background -->
+    <div id="three-bg" class="fixed inset-0 -z-10"></div>
+
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg backdrop-blur-lg bg-opacity-80">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="flex justify-between items-center h-16">
+                <div class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    TechStudy Hub
+                </div>
+                <div class="hidden md:flex space-x-8">
+                    <a href="/" class="text-gray-600 hover:text-blue-600 transition-colors">Home</a>
+                    <a href="/articles.html" class="text-gray-600 hover:text-blue-600 transition-colors">Articles</a>
+                    <a href="/about.html" class="text-gray-600 hover:text-blue-600 transition-colors">About</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Articles List -->
+    <div class="max-w-6xl mx-auto px-4 py-12 flex-grow w-full">
+        <h1 class="text-4xl font-bold text-gray-900 mb-8">All Articles</h1>
+        <div id="articlesList" class="space-y-8">
+            <!-- Articles will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 bg-opacity-90 backdrop-blur-lg text-white py-12 mt-auto">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-4">
+                        TechStudy Hub
+                    </h3>
+                    <p class="text-gray-400">
+                        Empowering developers through practical tutorials and in-depth tech articles.
+                    </p>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Quick Links</h4>
+                    <ul class="space-y-2">
+                        <li><a href="/" class="text-gray-400 hover:text-white transition-colors">Home</a></li>
+                        <li><a href="/articles.html" class="text-gray-400 hover:text-white transition-colors">Articles</a></li>
+                        <li><a href="/about.html" class="text-gray-400 hover:text-white transition-colors">About</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Connect</h4>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">Twitter</a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">GitHub</a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">LinkedIn</a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2024 TechStudy Hub. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script type="module" src="three-background.js"></script>
+    <script src="articles.js"></script>
+</body>
+</html> 
