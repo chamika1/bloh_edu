@@ -1,9 +1,13 @@
 from flask import Flask, request, jsonify, send_from_directory, send_file, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 from werkzeug.utils import secure_filename
+import sqlite3
+import jwt
+from functools import wraps
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # Create uploads folder if it doesn't exist
 UPLOAD_FOLDER = 'uploads'
@@ -25,6 +29,12 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///blog.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+app.config['SECRET_KEY'] = 'your-secret-key-here'  # Change this to a secure secret key
+
+# Admin credentials
+ADMIN_USERNAME = 'admin'
+ADMIN_PASSWORD = generate_password_hash('admin123')  # Change this to a secure password
+
 db = SQLAlchemy(app)
 
 # Article Model
@@ -56,24 +66,82 @@ def allowed_file(filename):
 def serve_upload(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
+# JWT token required decorator
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        
+        if 'Authorization' in request.headers:
+            token = request.headers['Authorization'].split(' ')[1]
+        
+        if not token:
+            return jsonify({'message': 'Token is missing'}), 401
+        
+        try:
+            data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+            if data['username'] != ADMIN_USERNAME:
+                return jsonify({'message': 'Invalid token'}), 401
+        except:
+            return jsonify({'message': 'Invalid token'}), 401
+        
+        return f(*args, **kwargs)
+    
+    return decorated
+
+# Login endpoint
+@app.route('/login', methods=['POST'])
+def login():
+    auth = request.json
+    
+    if not auth or not auth.get('username') or not auth.get('password'):
+        return jsonify({'message': 'Could not verify'}), 401
+    
+    if auth.get('username') != ADMIN_USERNAME or not check_password_hash(ADMIN_PASSWORD, auth.get('password')):
+        return jsonify({'message': 'Invalid credentials'}), 401
+    
+    token = jwt.encode({
+        'username': ADMIN_USERNAME,
+        'exp': datetime.utcnow() + timedelta(hours=24)
+    }, app.config['SECRET_KEY'])
+    
+    return jsonify({'token': token})
+
 # Upload image endpoint
 @app.route('/upload', methods=['POST'])
+@token_required
 def upload_file():
-    if 'file' not in request.files:
-        return jsonify({"error": "No file part"}), 400
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({"error": "No selected file"}), 400
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        # Add timestamp to filename to make it unique
-        filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}"
-        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        # Return just the filename
-        return jsonify({
-            "location": filename
-        })
-    return jsonify({"error": "File type not allowed"}), 400
+    try:
+        if 'file' not in request.files:
+            return jsonify({"error": "No file part"}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({"error": "No selected file"}), 400
+            
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            # Add timestamp to filename to make it unique
+            filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}"
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            
+            # Ensure upload directory exists
+            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            
+            # Save the file
+            file.save(file_path)
+            
+            # Return the relative path for the file
+            return jsonify({
+                "location": filename,
+                "url": url_for('serve_upload', filename=filename, _external=True)
+            })
+            
+        return jsonify({"error": "File type not allowed"}), 400
+        
+    except Exception as e:
+        print(f"Upload error: {str(e)}")  # Log the error
+        return jsonify({"error": "Failed to upload file"}), 500
 
 # Create database tables
 with app.app_context():
@@ -99,6 +167,7 @@ def get_articles():
     return jsonify([article.to_dict() for article in articles])
 
 @app.route('/articles', methods=['POST'])
+@token_required
 def create_article():
     if not request.is_json:
         return jsonify({"error": "Content-Type must be application/json"}), 400
@@ -122,6 +191,7 @@ def get_article(article_id):
     return jsonify(article.to_dict())
 
 @app.route('/articles/<int:article_id>', methods=['PUT'])
+@token_required
 def update_article(article_id):
     if not request.is_json:
         return jsonify({"error": "Content-Type must be application/json"}), 400
@@ -143,6 +213,7 @@ def update_article(article_id):
     return jsonify(article.to_dict())
 
 @app.route('/articles/<int:article_id>', methods=['DELETE'])
+@token_required
 def delete_article(article_id):
     article = Article.query.get_or_404(article_id)
     db.session.delete(article)
@@ -160,4 +231,5 @@ def internal_error(error):
     return jsonify({"error": "Internal server error"}), 500
 
 if __name__ == '__main__':
+    app.run(debug=True, port=8000) 
     app.run(debug=True, port=8000) 

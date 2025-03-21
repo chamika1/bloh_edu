@@ -15,13 +15,71 @@ function toggleModal(show = true) {
         articleForm.reset();
         articleForm.articleId.value = '';
         modalTitle.textContent = 'Create New Article';
+        tinymce.get('content').setContent(''); // Clear editor content
     }
 }
 
+// Check authentication
+function checkAuth() {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+        window.location.href = 'login.html';
+        return false;
+    }
+    return true;
+}
+
+// Add token to all API requests
+async function fetchWithAuth(url, options = {}) {
+    const token = localStorage.getItem('adminToken');
+    const headers = {
+        ...options.headers,
+        'Authorization': `Bearer ${token}`
+    };
+    
+    try {
+        const response = await fetch(url, { ...options, headers });
+        if (response.status === 401) {
+            // Token expired or invalid
+            localStorage.removeItem('adminToken');
+            window.location.href = 'login.html';
+            return null;
+        }
+        return response;
+    } catch (error) {
+        console.error('API request failed:', error);
+        throw error;
+    }
+}
+
+// Logout function
+function logout() {
+    localStorage.removeItem('adminToken');
+    window.location.href = 'login.html';
+}
+
+// Add logout button to navigation
+document.addEventListener('DOMContentLoaded', () => {
+    // Check authentication first
+    if (!checkAuth()) return;
+
+    // Add logout button
+    const nav = document.querySelector('nav .flex.space-x-4');
+    const logoutBtn = document.createElement('button');
+    logoutBtn.className = 'text-gray-600 hover:text-red-600 transition-colors';
+    logoutBtn.textContent = 'Logout';
+    logoutBtn.onclick = logout;
+    nav.appendChild(logoutBtn);
+});
+
 // Load Articles
 async function loadArticles() {
+    if (!checkAuth()) return;
+    
     try {
-        const response = await fetch(`${API_URL}/articles`);
+        const response = await fetchWithAuth(`${API_URL}/articles`);
+        if (!response) return;
+        
         const articles = await response.json();
         
         articlesList.innerHTML = articles.map(article => `
@@ -67,8 +125,12 @@ async function loadArticles() {
 
 // Edit Article
 async function editArticle(id) {
+    if (!checkAuth()) return;
+    
     try {
-        const response = await fetch(`${API_URL}/articles/${id}`);
+        const response = await fetchWithAuth(`${API_URL}/articles/${id}`);
+        if (!response) return;
+        
         const article = await response.json();
         
         articleForm.articleId.value = article.id;
@@ -96,10 +158,10 @@ async function editArticle(id) {
 
 // Delete Article
 async function deleteArticle(id) {
-    if (!confirm('Are you sure you want to delete this article?')) return;
+    if (!checkAuth() || !confirm('Are you sure you want to delete this article?')) return;
     
     try {
-        await fetch(`${API_URL}/articles/${id}`, {
+        await fetchWithAuth(`${API_URL}/articles/${id}`, {
             method: 'DELETE'
         });
         loadArticles();
@@ -115,6 +177,7 @@ cancelBtn.addEventListener('click', () => toggleModal(false));
 // Modified form submission to handle thumbnail
 articleForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (!checkAuth()) return;
     
     // Get the editor content and validate
     const editorContent = tinymce.get('content').getContent();
@@ -138,16 +201,23 @@ articleForm.addEventListener('submit', async (e) => {
         formData.append('file', thumbnailFile);
         
         try {
-            const response = await fetch(`${API_URL}/upload`, {
+            const response = await fetchWithAuth(`${API_URL}/upload`, {
                 method: 'POST',
-                body: formData
+                body: formData,
+                headers: {
+                }
             });
-            const data = await response.json();
-            if (response.ok) {
-                thumbnailPath = data.location;
+            
+            if (!response || !response.ok) {
+                throw new Error('Failed to upload thumbnail');
             }
+            
+            const data = await response.json();
+            thumbnailPath = data.location;
         } catch (error) {
             console.error('Error uploading thumbnail:', error);
+            alert('Failed to upload thumbnail. Please try again.');
+            return;
         }
     }
     
@@ -163,7 +233,7 @@ articleForm.addEventListener('submit', async (e) => {
     
     try {
         showLoading(); // Show loading animation while saving
-        const response = await fetch(url, {
+        const response = await fetchWithAuth(url, {
             method,
             headers: {
                 'Content-Type': 'application/json'
@@ -171,7 +241,7 @@ articleForm.addEventListener('submit', async (e) => {
             body: JSON.stringify(formData)
         });
         
-        if (!response.ok) {
+        if (!response || !response.ok) {
             throw new Error('Failed to save article');
         }
         
@@ -188,18 +258,22 @@ articleForm.addEventListener('submit', async (e) => {
 // Initialize TinyMCE with more features
 tinymce.init({
     selector: '#content',
+    height: 300,  // Reduced height
+    width: '100%',
     plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount',
-    toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table | align lineheight | checklist numlist bullist | emoticons | removeformat',
-    height: 500,
+    toolbar: 'undo redo | blocks | bold italic | alignleft aligncenter alignright | indent outdent | bullist numlist | code | table',
+    menubar: false,
+    statusbar: false,
+    branding: false,
+    promotion: false,
     skin: 'oxide',
     content_css: 'default',
     setup: function(editor) {
         editor.on('change', function() {
-            // Update hidden input with content for validation
-            const content = editor.getContent();
-            document.getElementById('content-hidden').value = content;
+            editor.save(); // Save content to textarea
         });
     },
+    // Basic plugins for essential functionality
     codesample_languages: [
         { text: 'Python', value: 'python' },
         { text: 'JavaScript', value: 'javascript' },
@@ -208,32 +282,12 @@ tinymce.init({
     ],
     content_style: `
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-            line-height: 1.6;
-            font-size: 16px;
-            color: rgb(51, 65, 85);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            padding: 10px;
         }
-        pre {
-            background-color: #1e1e1e !important;
-            border-radius: 8px !important;
-            padding: 1rem !important;
-            margin: 1.5rem 0 !important;
-        }
-        code {
-            font-family: 'Fira Code', monospace !important;
-            color: #d4d4d4 !important;
-        }
-        .language-python { color: #569cd6 !important; }
-        .language-python .comment { color: #6a9955 !important; }
-        .language-python .string { color: #ce9178 !important; }
-        .language-python .function { color: #dcdcaa !important; }
-        .language-python .keyword { color: #c586c0 !important; }
-        .language-python .operator { color: #d4d4d4 !important; }
-    `,
-    menubar: false,
-    statusbar: false,
-    branding: false,
-    promotion: false
+    `
 });
 
 // Handle thumbnail preview
